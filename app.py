@@ -3,7 +3,7 @@ import math
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-# --- 폰트 깨짐 방지 세팅 (영문 및 기본 고딕 대응) ---
+# --- 폰트 및 유니코드 깨짐 방지 ---
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['axes.unicode_minus'] = False
 
@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 글로벌 CSS 테마 스타일 ---
+# --- 전역 스타일 시트 (전시 시연 전용 디자인) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -50,7 +50,7 @@ BASE_BENEFIT_VOTS = 1586.4
 BASE_BENEFIT_ETC = 293.3   
 PVIFA_30 = 16.28
 
-# --- 메인 마스터 헤더 ---
+# --- 마스터 헤더 ---
 header_col1, header_col2 = st.columns([7, 3])
 with header_col1:
     st.markdown("<h1 style='font-size:32px; font-weight:bold; color:#111111; margin-bottom:0;'>UAM Cruiser-Feeder 통합 의사결정지원 시스템</h1>", unsafe_allow_html=True)
@@ -58,6 +58,7 @@ with header_col1:
 with header_col2:
     st.write("")
     if st.button("↻ 글로벌 파라미터 초기화 (Reset)", use_container_width=True):
+        st.clear_caches()
         st.rerun()
 
 st.markdown("---")
@@ -97,7 +98,7 @@ with tab1:
         st.video(google_drive_video_url, loop=True, autoplay=True, muted=True)
 
 # ==========================================
-# TAB 2: 운용 및 관제 시뮬레이션 (비주얼 엔진 탑재)
+# TAB 2: 운용 및 관제 시뮬레이션
 # ==========================================
 with tab2:
     if "t2_demand" not in st.session_state: st.session_state.t2_demand = 93500
@@ -125,15 +126,14 @@ with tab2:
     
     with vis_col1:
         st.markdown("#### 🗺️ 수요 분산 플로우 차트")
-        # Matplotlib 연산 기반 고해상도 순서도 그래픽 실시간 생성
         fig_flow, ax_flow = plt.subplots(figsize=(6, 5.5), facecolor='white')
         ax_flow.axis('off')
         
         box_data = [
-            (0.75, f"Daily Demand\\n{d_val:,} p/d"),
-            (0.53, f"Peak Hour Demand\\n{peak_hour_demand:,.0f} p/h"),
-            (0.31, f"Total Call / Min\\n{peak_min_total:,.1f} p/m"),
-            (0.09, f"Zone Call / Min\\n{demand_per_min_zone:,.2f} p/m")
+            (0.75, f"Daily Demand\n{d_val:,} p/d"),
+            (0.53, f"Peak Hour Demand\n{peak_hour_demand:,.0f} p/h"),
+            (0.31, f"Total Call / Min\n{peak_min_total:,.1f} p/m"),
+            (0.09, f"Zone Call / Min\n{demand_per_min_zone:,.2f} p/m")
         ]
         
         for y_pos, text_content in box_data:
@@ -149,26 +149,23 @@ with tab2:
 
     with vis_col2:
         st.markdown("#### 📊 관제 계통 대조군 및 시스템 부하율")
-        # Matplotlib 연산 기반 오리지널 도넛 링 게이지 & 막대그래프 동적 생성
         fig_gauge, (ax_g, ax_b) = plt.subplots(1, 2, figsize=(7, 5), facecolor='white', gridspec_kw={'width_ratios': [1.2, 1]})
         
-        # 1. 도넛 게이지 파트
         ax_g.axis('off')
         consumed = min(util_rate, 100.0)
         remaining = max(0.0, 100.0 - consumed)
         
-        wedges, _ = ax_g.pie([consumed, remaining], radius=1.0, colors=[util_color, '#E9ECEF'], startangle=90, counterclock=False, wedgeprops=dict(width=0.22, edgecolor='white', lw=2))
+        ax_g.pie([consumed, remaining], radius=1.0, colors=[util_color, '#E9ECEF'], startangle=90, counterclock=False, wedgeprops=dict(width=0.22, edgecolor='white', lw=2))
         ax_g.text(0, 0.1, f"{util_rate:.1f}%", ha='center', va='center', fontsize=26, weight='bold', color='#212529')
         ax_g.text(0, -0.25, "Utilization", ha='center', va='center', fontsize=12, weight='bold', color='#6C757D')
         ax_g.text(0, -0.65, f"[{wait_desc}]", ha='center', va='center', fontsize=11, weight='bold', color=util_color, bbox=dict(boxstyle="round,pad=0.4", fc='white', ec=util_color, lw=1.5))
         
-        # 2. 수요 vs 공급 한계 대조 막대그래프 파트
         ax_b.spines['top'].set_visible(False)
         ax_b.spines['right'].set_visible(False)
         ax_b.spines['left'].set_color('#DEE2E6')
         ax_b.spines['bottom'].set_color('#DEE2E6')
         
-        bars = ax_b.bar(['Demand', 'Capacity'], [demand_per_min_zone, max_cap_per_min], color=['#0D6EFD', '#868E96'], width=0.5, edgecolor='none')
+        bars = ax_b.bar(['Demand', 'Capacity'], [demand_per_min_zone, max_cap_per_min], color=['#0D6EFD', '#868E96'], width=0.5)
         ax_b.tick_params(axis='both', colors='#495057', labelsize=11)
         for bar in bars:
             yval = bar.get_height()
@@ -177,9 +174,8 @@ with tab2:
         fig_gauge.tight_layout()
         st.pyplot(fig_gauge)
 
-    # 최하단 슬라이더 레이아웃 박스 고정
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
-    st.markdown("<h4 style='color:#0D6EFD; margin-top:0; font-weight:bold;'>🛠️ 수송 관제 파라미터 정밀 제어판 (하단 슬라이더 축)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#0D6EFD; margin-top:0; font-weight:bold;'>🛠️ 수송 관제 파라미터 정밀 제어판</h4>", unsafe_allow_html=True)
     slider_col1, slider_col2 = st.columns(2)
     with slider_col1:
         st.slider("일일 총 수요 (명)", 50000, 150000, 93500, step=500, key="t2_demand_slider", on_change=lambda: st.session_state.update({"t2_demand": st.session_state.t2_demand_slider}))
@@ -217,18 +213,18 @@ with tab3:
         st.metric(label="순현재가치 (NPV)", value=f"{calculated_npv:,.0f} 억원")
         
     st.write("")
-    st.markdown("#### 📊 비용 vs 편익 현재가치 대조 곡선")
+    st.markdown("#### 📊 사회적 총비용 vs 총편익 현재가치 대조 곡선")
     chart_payload = {"평가 항목": ["Cost (PV)", "Benefit (PV)"], "금액 (억원)": [cost_pv, benefit_pv]}
     st.bar_chart(data=chart_payload, x="평가 항목", y="금액 (억원)", color="#0D6EFD")
 
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
-    st.markdown("<h4 style='color:#198754; margin-top:0; font-weight:bold;'>🛠_ 사회경제적 재무 타당성 파라미터 제어판</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#198754; margin-top:0; font-weight:bold;'>🛠️ 사회경제적 재무 타당성 파라미터 제어판</h4>", unsafe_allow_html=True)
     st.slider("위험 이탈 후 UAM 수요 유지율 (%)", 40, 100, 100, step=5, key="t3_retention_slider", on_change=lambda: st.session_state.update({"t3_retention": st.session_state.t3_retention_slider}))
     st.slider("항공 유지보수(MRO) 비율 (%)", 2.0, 10.0, 5.0, step=0.5, key="t3_mro_slider", on_change=lambda: st.session_state.update({"t3_mro": st.session_state.t3_mro_slider}))
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: 공역 기하학 및 시야각 실증 (물리 그래픽 엔진 복원 완료)
+# TAB 4: 공역 기하학 및 시야각 실증
 # ==========================================
 with tab4:
     if "t4_alt" not in st.session_state: st.session_state.t4_alt = 400
@@ -241,39 +237,32 @@ with tab4:
     
     with geo_col1:
         st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램 (True-to-Scale)")
-        # 오리지널 축척 다이어그램 복원을 위한 벡터 도면 드로잉 엔진
         fig_geo, ax_g2 = plt.subplots(figsize=(6, 5), facecolor='#E8F4F8')
         ax_g2.set_xlim(0, 500)
         ax_g2.set_ylim(0, 600)
         ax_g2.axis('off')
         
-        # 1. 지표면 기준선 드로잉
         ax_g2.axhline(y=50, color='#495057', lw=3)
         ax_g2.text(15, 25, "Ground (0m)", fontsize=11, weight='bold', color='#6C757D')
         
-        # 2. 여의도 63빌딩 축척 구조물 드로잉
-        # 높이 250m, 폭 40m 비례 반영
         rect_bldg = patches.Rectangle((60, 50), 40, 250, fill=True, color='#CED4DA', ec='#ADB5BD', lw=2)
         ax_g2.add_patch(rect_bldg)
-        ax_g2.text(80, 315, "63 Building\\n(250m)", ha='center', va='bottom', fontsize=11, weight='bold', color='#495057')
+        ax_g2.text(80, 315, "63 Building\n(250m)", ha='center', va='bottom', fontsize=11, weight='bold', color='#495057')
         
-        # 3. UAM 순항 모선 캡슐형 드로잉 (실제 변수 연동 스케일형)
         m_x, m_y = 260, 50 + alt_val
         ellipse_ship = patches.Ellipse((m_x, m_y), len_val, max(20, len_val * 0.25), fill=True, color='#6C757D', ec='#343A40', lw=2)
         ax_g2.add_patch(ellipse_ship)
         ax_g2.text(m_x, m_y + max(20, len_val*0.25) + 5, f"Mothership ({len_val}m)", ha='center', va='bottom', fontsize=11, weight='bold', color='#0D6EFD')
         
-        # 4. 지상 관찰자 (사람 모양 실루엣 마커 완벽 복원)
         p_x, p_y = 420, 50
-        ax_g2.plot(p_x, p_y + 35, marker='o', markersize=9, color='#212529')  # 머리
-        ax_g2.plot([p_x, p_x], [p_y + 15, p_y + 30], color='#212529', lw=2.5)  # 몸통
-        ax_g2.plot([p_x, p_x - 10], [p_y + 25, p_y + 18], color='#212529', lw=2)  # 왼팔
-        ax_g2.plot([p_x, p_x + 10], [p_y + 25, p_y + 18], color='#212529', lw=2)  # 오른팔
-        ax_g2.plot([p_x, p_x - 8], [p_y + 15, p_y], color='#212529', lw=2.2)   # 왼다리
-        ax_g2.plot([p_x, p_x + 8], [p_y + 15, p_y], color='#212529', lw=2.2)   # 오른다리
+        ax_g2.plot(p_x, p_y + 35, marker='o', markersize=9, color='#212529')  
+        ax_g2.plot([p_x, p_x], [p_y + 15, p_y + 30], color='#212529', lw=2.5)  
+        ax_g2.plot([p_x, p_x - 10], [p_y + 25, p_y + 18], color='#212529', lw=2)  
+        ax_g2.plot([p_x, p_x + 10], [p_y + 25, p_y + 18], color='#212529', lw=2)  
+        ax_g2.plot([p_x, p_x - 8], [p_y + 15, p_y], color='#212529', lw=2.2)   
+        ax_g2.plot([p_x, p_x + 8], [p_y + 15, p_y], color='#212529', lw=2.2)   
         ax_g2.text(p_x, p_y - 25, "Observer", ha='center', fontsize=11, weight='bold', color='#212529')
         
-        # 5. 시야각 방사형 추적 점선 레이저 가이드
         ax_g2.plot([p_x, m_x - len_val/2], [p_y + 35, m_y], color='#DC3545', linestyle='--', lw=2)
         ax_g2.plot([p_x, m_x + len_val/2], [p_y + 35, m_y], color='#DC3545', linestyle='--', lw=2)
         
@@ -283,9 +272,8 @@ with tab4:
     with geo_col2:
         st.markdown("#### 👁️ 1인칭 체감 뷰 (FPV) 및 수용성 대조")
         fov_card_color = "#198754" if calculated_fov <= 15.6 else "#DC3545"
-        fov_judgement = "Acceptable (시내버스 15.6도 미만)" if calculated_fov <= 15.6 else "Visual Pressure (위압감 발생 구역)"
+        fov_judgement = "Acceptable (시내버스 15.6도 미만)" if calculated_fov <= 15.6 else "Visual Pressure"
         
-        # 계측 지표용 대조용 비교 바 차트 동적 렌더링
         fig_bar, ax_bar = plt.subplots(figsize=(6, 5), facecolor='#212529')
         ax_bar.set_facecolor('#212529')
         ax_bar.spines['top'].set_visible(False)
@@ -298,23 +286,22 @@ with tab4:
         colors_fov = ['#DC3545', '#0D6EFD', '#198754']
         
         bars_fov = ax_bar.barh(labels_fov, values_fov, color=colors_fov, height=0.45)
-        ax_bar.set_xlim(0, 60) # 인간 한계 시야인 60도를 화각 100% 임계치로 세팅
+        ax_bar.set_xlim(0, 60) 
         ax_bar.tick_params(axis='x', colors='white', labelsize=11)
-        ax_bar.tick_params(axis='y', colors='white', labelsize=12, weight='bold')
+        ax_bar.tick_params(axis='y', colors='white', labelsize=12)
         
         for bar in bars_fov:
             xval = bar.get_width()
-            ax_bar.text(xval + 1.5, bar.get_y() + bar.get_height()/2, f"{xval:.2f}°", ha='left', va='center', fontsize=12, weight='bold', color='white')
+            ax_bar.text(xval + 1.5, bar.get_y() + bar.get_height()/2, f"{xval:.2f}°", ha='left', va='center', fontsize=12, color='white')
             
-        ax_bar.text(2, 2.7, f"True FOV: {calculated_fov:.2f}°", fontsize=18, weight='bold', color='#FFC107')
-        ax_bar.text(2, 2.4, f"Conclusion: {fov_judgement}", fontsize=12, weight='bold', color=fov_card_color)
+        ax_bar.text(2, 2.7, f"True FOV: {calculated_fov:.2f}°", fontsize=18, color='#FFC107')
+        ax_bar.text(2, 2.4, f"Conclusion: {fov_judgement}", fontsize=12, color=fov_card_color)
         
         fig_bar.tight_layout()
         st.pyplot(fig_bar)
 
-    # 공역 기하학 스케일러 최하단 완전 격리 배치
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
-    st.markdown("<h4 style='color:#6F42C1; margin-top:0; font-weight:bold;'>🛠️ 공역 기하학 및 기체 제원 제어판 (하단 레이아웃)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#6F42C1; margin-top:0; font-weight:bold;'>🛠️ 공역 기하학 및 기체 제원 제어판</h4>", unsafe_allow_html=True)
     st.slider("모선 비행 고도 (m)", 150, 600, 400, step=10, key="t4_alt_slider", on_change=lambda: st.session_state.update({"t4_alt": st.session_state.t4_alt_slider}))
     st.slider("모선 전장 길이 (m)", 50, 200, 100, step=5, key="t4_len_slider", on_change=lambda: st.session_state.update({"t4_len": st.session_state.t4_len_slider}))
     st.markdown("</div>", unsafe_allow_html=True)
