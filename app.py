@@ -1,14 +1,14 @@
 import streamlit as st
 import math
 
-# --- 페이지 기본 설정 (전시 시연용 와이드 레이아웃 락) ---
+# --- 페이지 기본 설정 (전시용 와이드 뷰 고정) ---
 st.set_page_config(
     page_title="Cruiser-Feeder UAM 통합 의사결정지원 시스템",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- 전역 가독성 및 절대 깨짐 방지 CSS 구성 (KoPubWorld돋움체 완벽 사사) ---
+# --- 글로벌 CSS 테마 스타일 (글씨 깨짐 차단 및 폰트 유연 이식) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -16,7 +16,7 @@ st.markdown("""
         font-family: 'Noto Sans KR', sans-serif !important;
         background-color: #F4F6F8;
     }
-    /* 탭 디자인 원본 미러링 */
+    /* 탭 제어판 대형 가시성 확보 */
     .stTabs [data-baseweb="tab"] {
         font-size: 15px !important;
         font-weight: bold !important;
@@ -30,7 +30,7 @@ st.markdown("""
         border: 1px solid #DEE2E6 !important;
         border-bottom: none !important;
     }
-    /* 하단 슬라이더 정밀 제어판 격리 상자 */
+    /* 하단 슬라이더 정밀 제어 구역 박스 서식 */
     .footer-control-panel {
         background-color: #FFFFFF;
         border: 1px solid #DEE2E6;
@@ -44,30 +44,23 @@ st.markdown("""
         font-weight: bold !important;
         color: #495057 !important;
     }
-    /* 텍스트 줄바꿈 방지 */
-    .nobr {
-        white-space: nowrap;
-    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 시스템 고정 상수 (원본 연산 모델 매칭) ---
+# --- 시스템 고정 상수 (수리 모형 동기화) ---
 BASE_COST_CAPEX = 7707.5   
 BASE_COST_OPEX = 646.2     
 BASE_BENEFIT_VOTS = 1586.4 
 BASE_BENEFIT_ETC = 293.3   
 PVIFA_30 = 16.28
 
-# --- 상단 고정 헤더 ---
-header_frame = st.container()
-with header_frame:
-    h_col1, h_col2 = st.columns([7, 3])
-    with h_col1:
-        st.markdown("<h2 style='font-size:26px; font-weight:bold; color:#212529; margin-bottom:0;'>UAM Cruiser-Feeder 통합 의사결정지원 시스템</h2>", unsafe_allow_html=True)
-    with h_col2:
-        st.write("")
-        if st.button("↻ 초기화 (Reset)", use_container_width=True):
-            st.rerun()
+# --- 상단 고정 헤더 프레임 ---
+h_col1, h_col2 = st.columns([7, 3])
+with h_col1:
+    st.markdown("<h2 style='font-size:26px; font-weight:bold; color:#212529; margin-bottom:0;'>UAM Cruiser-Feeder 통합 의사결정지원 시스템</h2>", unsafe_allow_html=True)
+with h_col2:
+    if st.button("↻ 초기화 (Reset)", use_container_width=True):
+        st.rerun()
 
 st.markdown("---")
 
@@ -108,7 +101,6 @@ with tab1:
 # TAB 2: 운용 및 관제 시뮬레이션
 # ==========================================
 with tab2:
-    # 파라미터 세션 상태 홀딩 및 하단 제어 연동
     if "t2_demand" not in st.session_state: st.session_state.t2_demand = 93500
     if "t2_zones" not in st.session_state: st.session_state.t2_zones = 10
     if "t2_cycle" not in st.session_state: st.session_state.t2_cycle = 6
@@ -117,7 +109,6 @@ with tab2:
 
     d_v, z_v, c_v, p_v, pods_v = st.session_state.t2_demand, st.session_state.t2_zones, st.session_state.t2_cycle, st.session_state.t2_peak, st.session_state.t2_pods
 
-    # 원본 연산 모델 수학적 동기화
     peak_hour_demand = d_v * (p_v / 100.0)
     peak_min_total = peak_hour_demand / 60.0
     demand_per_min_zone = peak_min_total / z_v
@@ -132,22 +123,23 @@ with tab2:
     else:
         wait_time_txt, wait_desc, util_color = "마비", "용량 초과", "#DC3545"
 
-    # --- 상단 헤더 메트릭 (존당 수요, 대기시간, 부하율 카드형 배치) ---
+    # 상단 3분할 메트릭 바
     m_col1, m_col2, m_col3 = st.columns(3)
     with m_col1:
         st.markdown(f"<div style='background-color:white; border:1px solid #DEE2E6; border-radius:6px; padding:15px; text-align:center;'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>존당 수요</span><br><b style='font-size:24px; color:#0D6EFD;'>{demand_per_min_zone:.2f} p/m</b></div>", unsafe_allow_html=True)
     with m_col2:
-        st.markdown(f"<div style='background-color:white; border:1px solid #DEE2E6; border-radius:6px; padding:15px; text-align:center;'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>예상 대기시간</span><br><b style='font-size:24px; color:{util_color};'>{wait_time_txt}</b></div>", unsafe_allow_html=True)
+        st.markdown(f"<div style='background-color:white; border:1px solid #DEE2E6; border-radius:6px; padding:15px; text-align:center;'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>예상 대기시간</span><br><b style='font-size:24px; color:{util_color};'>{wait_time_txt} ({wait_desc})</b></div>", unsafe_allow_html=True)
     with m_col3:
         st.markdown(f"<div style='background-color:white; border:1px solid #DEE2E6; border-radius:6px; padding:15px; text-align:center;'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>시스템 부하율</span><br><b style='font-size:24px; color:{util_color};'>{util_rate:.1f}%</b></div>", unsafe_allow_html=True)
 
     st.write("")
 
-    # --- 오리지널 그래픽 하이브리드 벡터 드로잉 (순서도 + 도넛 게이지 + 대조 막대) ---
+    # 정밀 벡터 구조물 그래픽 인스턴스 렌더링
     vis_col1, vis_col2 = st.columns([5, 5])
     with vis_col1:
+        st.markdown("##### 🗺️ 수요 분산 플로우 차트")
         st.markdown(f"""
-        <div style='background-color: white; border: 1px solid #DEE2E6; border-radius: 8px; padding: 25px; height: 420px; display: flex; flex-direction: column; justify-content: center;'>
+        <div style='background-color: white; border: 1px solid #DEE2E6; border-radius: 8px; padding: 25px; height: 380px; display: flex; flex-direction: column; justify-content: center;'>
             <div style='text-align:center; padding:10px; border:1px solid #DEE2E6; border-radius:6px; background-color:#F8F9FA;'><small style='color:#6C757D; font-weight:bold;'>일일 총 수요</small><br><b style='font-size:18px; color:#212529;'>{d_v:,}명</b></div>
             <div style='text-align:center; color:#ADB5BD; font-size:14px; margin:2px 0;'>▼</div>
             <div style='text-align:center; padding:10px; border:1px solid #DEE2E6; border-radius:6px; background-color:#F8F9FA;'><small style='color:#6C757D; font-weight:bold;'>첨두시 수요(h)</small><br><b style='font-size:18px; color:#0D6EFD;'>{peak_hour_demand:,.0f}명</b></div>
@@ -159,38 +151,43 @@ with tab2:
         """, unsafe_allow_html=True)
 
     with vis_col2:
+        st.markdown("##### 📊 관제 계통 대조군 및 시스템 부하율")
         stroke_offset = 502 - (min(util_rate, 100.0) / 100.0) * 376
         bar_max = max(demand_per_min_zone, max_cap_per_min, 1.0)
-        dem_bar_h = (demand_per_min_zone / bar_max) * 80
-        cap_bar_h = (max_cap_per_min / bar_max) * 80
+        dem_bar_h = (demand_per_min_zone / bar_max) * 110
+        cap_bar_h = (max_cap_per_min / bar_max) * 110
         
-        st.markdown(f"""
-        <div style='background-color: white; border: 1px solid #DEE2E6; border-radius: 8px; padding: 20px; height: 420px; text-align: center; display: flex; align-items: center; justify-content: space-around;'>
-            <svg width="180" height="180" viewBox="0 0 200 200">
-                <circle cx="100" cy="100" r="80" stroke="#E9ECEF" stroke-width="16" fill="none" stroke-dasharray="502" stroke-dashoffset="125" transform="rotate(135 100 100)" />
-                <circle cx="100" cy="100" r="80" stroke="{util_color}" stroke-width="16" fill="none" stroke-dasharray="502" stroke-dashoffset="{stroke_offset}" transform="rotate(135 100 100)" stroke-linecap="round" />
-                <text x="100" y="95" text-anchor="middle" font-size="28" font-weight="bold" fill="#212529">{util_rate:.1f}%</text>
-                <text x="100" y="125" text-anchor="middle" font-size="12" font-weight="bold" fill="#6C757D">시스템 부하율</text>
-                <rect x="45" y="145" width="110" height="26" rx="13" fill="{util_color}" />
-                <text x="100" y="162" text-anchor="middle" font-size="11" font-weight="bold" fill="white">{wait_desc}</text>
-            </svg>
-            
-            <div style='width: 160px; height: 180px; display: flex; align-items: flex-end; justify-content: space-around; position: relative; border-bottom: 2px solid #DEE2E6; padding-bottom: 5px;'>
-                <div style='display: flex; flex-direction: column; align-items: center;'>
-                    <span style='font-size: 11px; font-weight: bold; color: #0D6EFD;'>{demand_per_min_zone:.2f}</span>
-                    <div style='background-color: #0D6EFD; width: 40px; height: {dem_bar_h}px; border-radius: 4px 4px 0 0;'></div>
-                    <span style='font-size: 11px; font-weight: bold; color: #495057; margin-top: 5px;' class='nobr'>수요</span>
+        # 기획자님의 핵심 원형 링과 수요공급 수직 바를 HTML 컴포넌트 내부 샌드박스로 안전 송출
+        st.components.v1.html(f"""
+        <div style="font-family: sans-serif; display: flex; align-items: center; justify-content: space-around; background: white; border: 1px solid #DEE2E6; border-radius: 8px; height: 380px; padding: 0 20px; box-sizing: border-box;">
+            <!-- 원형 부하율 도넛 게이지 -->
+            <div style="text-align: center;">
+                <svg width="170" height="170" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="80" stroke="#E9ECEF" stroke-width="16" fill="none" stroke-dasharray="502" stroke-dashoffset="125" transform="rotate(135 100 100)" />
+                    <circle cx="100" cy="100" r="80" stroke="{util_color}" stroke-width="16" fill="none" stroke-dasharray="502" stroke-dashoffset="{stroke_offset}" transform="rotate(135 100 100)" stroke-linecap="round" />
+                    <text x="100" y="95" text-anchor="middle" font-size="28" font-weight="bold" fill="#212529">{util_rate:.1f}%</text>
+                    <text x="100" y="125" text-anchor="middle" font-size="12" font-weight="bold" fill="#6C757D">시스템 부하율</text>
+                    <rect x="45" y="145" width="110" height="26" rx="13" fill="{util_color}" />
+                    <text x="100" y="162" text-anchor="middle" font-size="11" font-weight="bold" fill="white">{wait_desc}</text>
+                </svg>
+            </div>
+            <!-- 수요 vs 공급 실측 대조 그래프 -->
+            <div style="width: 170px; height: 220px; display: flex; align-items: flex-end; justify-content: space-around; border-bottom: 2px solid #DEE2E6; padding-bottom: 5px; box-sizing: border-box;">
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 11px; font-weight: bold; color: #0D6EFD; margin-bottom: 4px;">{demand_per_min_zone:.2f}</span>
+                    <div style="background-color: #0D6EFD; width: 45px; height: {dem_bar_h}px; border-radius: 4px 4px 0 0;"></div>
+                    <span style="font-size: 12px; font-weight: bold; color: #495057; margin-top: 8px; white-space: nowrap;">수요</span>
                 </div>
-                <div style='display: flex; flex-direction: column; align-items: center;'>
-                    <span style='font-size: 11px; font-weight: bold; color: #6C757D;'>{max_cap_per_min:.2f}</span>
-                    <div style='background-color: #868E96; width: 40px; height: {cap_bar_h}px; border-radius: 4px 4px 0 0;'></div>
-                    <span style='font-size: 11px; font-weight: bold; color: #495057; margin-top: 5px;' class='nobr'>공급(Cap)</span>
+                <div style="display: flex; flex-direction: column; align-items: center;">
+                    <span style="font-size: 11px; font-weight: bold; color: #6C757D; margin-bottom: 4px;">{max_cap_per_min:.2f}</span>
+                    <div style="background-color: #868E96; width: 45px; height: {cap_bar_h}px; border-radius: 4px 4px 0 0;"></div>
+                    <span style="font-size: 12px; font-weight: bold; color: #495057; margin-top: 8px; white-space: nowrap;">공급(Cap)</span>
                 </div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """, height=390)
 
-    # --- 2. 최하단 가로형 슬라이더 배치 축 ---
+    # 최하단 가로형 고정 슬라이더 제어판
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
     slider_col1, slider_col2 = st.columns(2)
     with slider_col1:
@@ -210,18 +207,15 @@ with tab3:
     if "t3_mro" not in st.session_state: st.session_state.t3_mro = 5.0
 
     ret_v, mro_v = st.session_state.t3_retention / 100.0, st.session_state.t3_mro / 100.0
-    t2_d_back = st.session_state.get("t2_demand", 93500)
-    t2_p_back = st.session_state.get("t2_pods", 100)
-    t2_z_back = st.session_state.get("t2_zones", 10)
+    t2_d_b, t2_p_b, t2_z_b = st.session_state.get("t2_demand", 93500), st.session_state.get("t2_pods", 100), st.session_state.get("t2_zones", 10)
 
-    calc_capex = (217.5 * math.ceil(19 * (t2_d_back / 93501))) + (2.0 * (t2_p_back * t2_z_back)) + 1140.0
+    calc_capex = (217.5 * math.ceil(19 * (t2_d_b / 93501))) + (2.0 * (t2_p_b * t2_z_b)) + 1140.0
     calc_opex = 212 + 6.2 + (calc_capex * mro_v) + 100
     cost_pv = calc_capex + (calc_opex * PVIFA_30)
     benefit_pv = (BASE_BENEFIT_VOTS + BASE_BENEFIT_ETC) * PVIFA_30 * ret_v
     bc_ratio = benefit_pv / cost_pv if cost_pv > 0 else 0
     calculated_npv = benefit_pv - cost_pv
 
-    # 상단 정보 요약 카드
     ec_col1, ec_col2 = st.columns(2)
     with ec_col1:
         bc_c = "#198754" if bc_ratio >= 1.0 else "#DC3545"
@@ -231,27 +225,26 @@ with tab3:
 
     st.write("")
     
-    # 총비용 총편익 대조 막대그래프 벡터 이식
+    # 총비용 총편익 가로 정렬 바
     max_eco_val = max(cost_pv, benefit_pv, 1.0)
     cost_bar_h = (cost_pv / max_eco_val) * 200
     ben_bar_h = (benefit_pv / max_eco_val) * 200
     
     st.markdown(f"""
-    <div style='background-color: white; border: 1px solid #DEE2E6; border-radius: 8px; padding: 30px; height: 320px; display: flex; align-items: flex-end; justify-content: center; gap: 80px; border-bottom: 3px solid #DEE2E6;'>
+    <div style='background-color: white; border: 1px solid #DEE2E6; border-radius: 8px; padding: 30px; height: 300px; display: flex; align-items: flex-end; justify-content: center; gap: 80px; border-bottom: 3px solid #DEE2E6;'>
         <div style='display: flex; flex-direction: column; align-items: center;'>
             <span style='font-size: 13px; font-weight: bold; color: #495057; margin-bottom:5px;'>{cost_pv:,.0f} 억</span>
             <div style='background-color: #868E96; width: 70px; height: {cost_bar_h}px; border-radius: 4px 4px 0 0;'></div>
-            <span style='font-size: 13px; font-weight: bold; color: #212529; margin-top: 8px;' class='nobr'>총비용(PV)</span>
+            <span style='font-size: 13px; font-weight: bold; color: #212529; margin-top: 8px; white-space: nowrap;'>총비용(PV)</span>
         </div>
         <div style='display: flex; flex-direction: column; align-items: center;'>
             <span style='font-size: 13px; font-weight: bold; color: {bc_c}; margin-bottom:5px;'>{benefit_pv:,.0f} 억</span>
             <div style='background-color: {bc_c}; width: 70px; height: {ben_bar_h}px; border-radius: 4px 4px 0 0;'></div>
-            <span style='font-size: 13px; font-weight: bold; color: #212529; margin-top: 8px;' class='nobr'>총편익(PV)</span>
+            <span style='font-size: 13px; font-weight: bold; color: #212529; margin-top: 8px; white-space: nowrap;'>총편익(PV)</span>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # 하단 슬라이더 정밀 통제 구역
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
     st.slider("위험 이탈 후 UAM 수요 유지율 (%)", 40, 100, 100, step=5, key="t3_retention_slider", on_change=lambda: st.session_state.update({"t3_retention": st.session_state.t3_retention_slider}))
     st.slider("항공 유지보수(MRO) 비율 (%)", 2.0, 10.0, 5.0, step=0.5, key="t3_mro_slider", on_change=lambda: st.session_state.update({"t3_mro": st.session_state.t3_mro_slider}))
@@ -267,22 +260,19 @@ with tab4:
     alt_v, len_v = st.session_state.t4_alt, st.session_state.t4_len
     calculated_fov = math.degrees(2 * math.atan(len_v / (2 * alt_v)))
 
-    # --- 상단 양방향 완벽 그래픽 복원 (True-to-Scale 다이어그램 + 1인칭 FPV 수평 대조 막대) ---
     geo_col1, geo_col2 = st.columns([5, 5])
     with geo_col1:
-        st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램")
+        st.markdown("##### 🗺️ 물리적 실측 축척 다이어그램")
         
-        # 600m 임계 화각 기준 정비례 변환 픽셀 스케일러
         svg_max_h = 280
         scale_ratio = 200 / 600.0  
         px_bldg_h = 250 * scale_ratio
         px_uam_alt = alt_v * scale_ratio
-        px_uam_len = max(30, len_v * scale_ratio)
+        px_uam_len = max(35, len_v * scale_ratio)
         
-        # 원본 소스코드의 사람 마커(Observer) 및 가이드 레이저 완벽 복원
         st.markdown(f"""
         <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 8px; height: {svg_max_h}px; position: relative; overflow:hidden;'>
-            <div style='position: absolute; left: 45px; bottom: 40px; width: 40px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
+            <div style='position: absolute; left: 45px; bottom: 40px; width: 45px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
                 <span style='font-size: 11px; color: #495057; font-weight: bold; text-align: center;'>63빌딩<br>(250m)</span>
             </div>
             <div style='position: absolute; left: 200px; bottom: {40 + px_uam_alt}px; width: {px_uam_len}px; height: {max(14, px_uam_len*0.28)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
@@ -310,7 +300,7 @@ with tab4:
         """, unsafe_allow_html=True)
 
     with geo_col2:
-        st.markdown("#### 👁️ 1인칭 체감 뷰 (FPV) 및 수용성 대조")
+        st.markdown("##### 👁️ 1인칭 체감 뷰 (FPV) 및 수용성 대조")
         fov_col = "#198754" if calculated_fov <= 15.6 else "#DC3545"
         fov_j = "시내버스보다 작게 보임 (위압감 해소)" if calculated_fov <= 15.6 else "도심 랜드마크 수준 (위압감 발생 주의)"
         
@@ -318,28 +308,27 @@ with tab4:
         bldg_w_pct = (14.10 / 60.0) * 100
         uam_w_pct = min(100.0, (calculated_fov / 60.0) * 100)
 
-        # 텍스트 깨짐이나 코드 찌꺼기 노출을 100% 차단한 모던 수평 스케일 지표 바
-        st.markdown(f"""
-        <div style='background-color: #212529; color: white; height: {svg_max_h}px; padding: 22px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center;'>
-            <p style='font-size: 17px; font-weight: bold; color: #FFC107; margin-bottom: 2px; margin-top:0;'>실제 체감 시야각 (FOV): {calculated_fov:.2f}°</p>
-            <p style='font-size: 13px; color: {fov_col}; font-weight: bold; margin-bottom: 15px;'>결론: {fov_j}</p>
+        # 샌드박스로 완벽 격리하여 1인칭 대조 수평 스케일 컴포넌트 출력
+        st.components.v1.html(f"""
+        <div style="font-family: sans-serif; background-color: #212529; color: white; height: 280px; padding: 22px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;">
+            <p style="font-size: 17px; font-weight: bold; color: #FFC107; margin-bottom: 2px; margin-top:0;">실제 체감 시야각 (FOV): {calculated_fov:.2f}°</p>
+            <p style="font-size: 13px; color: {fov_col}; font-weight: bold; margin-bottom: 15px;">결론: {fov_j}</p>
             
-            <div style='margin-bottom: 10px;'>
-                <div style='display:flex; justify-content:space-between; font-size:11px; color:#ADB5BD; font-weight:bold;'><span>40m 앞 일반 시내버스 차로 통과 시</span><span>15.60°</span></div>
-                <div style='background-color:#4A5568; height:10px; border-radius:5px; width:100%; margin-top:3px; overflow:hidden;'><div style='background-color:#198754; height:100%; width:{bus_w_pct}%;'></div></div>
+            <div style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#ADB5BD; font-weight:bold;"><span>40m 앞 일반 시내버스 차로 통과 시</span><span>15.60°</span></div>
+                <div style="background-color:#4A5568; height:10px; border-radius:5px; width:100%; margin-top:3px; overflow:hidden;"><div style="background-color:#198754; height:100%; width:{bus_w_pct}%;"></div></div>
             </div>
-            <div style='margin-bottom: 10px;'>
-                <div style='display:flex; justify-content:space-between; font-size:11px; color:#ADB5BD; font-weight:bold;'><span>1km 거리 밖 여의도 63빌딩 조망 시</span><span>14.10°</span></div>
-                <div style='background-color:#4A5568; height:10px; border-radius:5px; width:100%; margin-top:3px; overflow:hidden;'><div style='background-color:#0D6EFD; height:100%; width:{bldg_w_pct}%;'></div></div>
+            <div style="margin-bottom: 10px;">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#ADB5BD; font-weight:bold;"><span>1km 거리 밖 여의도 63빌딩 조망 시</span><span>14.10°</span></div>
+                <div style="background-color:#4A5568; height:10px; border-radius:5px; width:100%; margin-top:3px; overflow:hidden;"><div style="background-color:#0D6EFD; height:100%; width:{bldg_w_pct}%;"></div></div>
             </div>
             <div>
-                <div style='display:flex; justify-content:space-between; font-size:11px; color:#FFC107; font-weight:bold;'><span>현재 조건부 공중 UAM 모선 조망 시</span><span>{calculated_fov:.2f}°</span></div>
-                <div style='background-color:#4A5568; height:10px; border-radius:5px; width:100%; margin-top:3px; overflow:hidden;'><div style='background-color:#DC3545; height:100%; width:{uam_w_pct}%;'></div></div>
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:#FFC107; font-weight:bold;"><span>현재 조건부 공중 UAM 모선 조망 시</span><span>{calculated_fov:.2f}°</span></div>
+                <div style="background-color:#4A5568; height:10px; border-radius:5px; width:100%; margin-top:3px; overflow:hidden;"><div style="background-color:#DC3545; height:100%; width:{uam_w_pct}%;"></div></div>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """, height=280)
 
-    # --- 최하단 가로형 고정 슬라이더 축 제어판 ---
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
     st.slider("모선 비행 고도 (m)", 150, 600, 400, step=10, key="t4_alt_slider", on_change=lambda: st.session_state.update({"t4_alt": st.session_state.t4_alt_slider}))
     st.slider("모선 전장 길이 (m)", 50, 200, 100, step=5, key="t4_len_slider", on_change=lambda: st.session_state.update({"t4_len": st.session_state.t4_len_slider}))
