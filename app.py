@@ -308,7 +308,7 @@ with tab4:
         bldg_w_pct = (14.10 / 60.0) * 100
         uam_w_pct = min(100.0, (calculated_fov / 60.0) * 100)
 
-        # 샌드박스로 완벽 격리하여 1인칭 대조 수평 스케일 컴포넌트 출력
+        # 63빌딩과 모선의 시인성 확보를 위해 배율 및 간격을 수정한 샌드박스 엔진
         st.components.v1.html(f"""
         <div style="font-family: sans-serif; background-color: #212529; color: white; height: 280px; padding: 22px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;">
             <p style="font-size: 17px; font-weight: bold; color: #FFC107; margin-bottom: 2px; margin-top:0;">실제 체감 시야각 (FOV): {calculated_fov:.2f}°</p>
