@@ -39,7 +39,7 @@ st.markdown("""
         margin-bottom: 15px;
     }
     </style>
-""", unsafe_allow_allowed_html=True)
+""", unsafe_allow_html=True)
 
 # --- 시스템 고정 상수 ---
 BASE_COST_CAPEX = 7707.5   
