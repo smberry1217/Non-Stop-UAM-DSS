@@ -1,11 +1,5 @@
 import streamlit as st
 import math
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-
-# --- 폰트 및 유니코드 깨짐 방지 ---
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['axes.unicode_minus'] = False
 
 # --- 페이지 기본 설정 ---
 st.set_page_config(
@@ -14,31 +8,72 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- 전역 스타일 시트 (전시 시연 전용 디자인) ---
+# --- 전역 가독성 및 절대 깨짐 방지 CSS 구성 ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
     html, body, [class*="css"] {
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: 'Noto Sans KR', sans-serif !important;
         background-color: #F8F9FA;
     }
+    /* 탭 메뉴 대형 가시성 확보 */
     .stTabs [data-baseweb="tab"] {
         font-size: 16px !important;
         font-weight: bold !important;
         padding: 14px 28px !important;
     }
+    /* 플로우 차트 수치 전용 카드 */
+    .flow-card-node {
+        background-color: white;
+        border: 2px solid #E9ECEF;
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+        margin-bottom: 5px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.01);
+    }
+    .flow-arrow-down {
+        text-align: center;
+        color: #ADB5BD;
+        font-size: 20px;
+        font-weight: bold;
+        margin: 2px 0;
+    }
+    /* 하단 정밀 슬라이더 제어 박스 */
     .footer-control-panel {
         background-color: #FFFFFF;
         border: 2px solid #0D6EFD;
         border-radius: 16px;
         padding: 30px;
-        margin-top: 30px;
+        margin-top: 40px;
         box-shadow: 0 8px 24px rgba(13, 110, 253, 0.05);
     }
     label [data-testid="stWidgetLabel"] p {
         font-size: 16px !important;
         font-weight: bold !important;
         color: #212529 !important;
+    }
+    /* 레퍼런스 막대 바 구조 */
+    .bar-container {
+        margin-bottom: 15px;
+    }
+    .bar-label-flex {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        margin-bottom: 4px;
+        font-weight: bold;
+    }
+    .bar-bg-track {
+        background-color: #4A5568;
+        height: 14px;
+        border-radius: 7px;
+        width: 100%;
+        overflow: hidden;
+    }
+    .bar-fill-progress {
+        height: 100%;
+        border-radius: 7px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -50,7 +85,7 @@ BASE_BENEFIT_VOTS = 1586.4
 BASE_BENEFIT_ETC = 293.3   
 PVIFA_30 = 16.28
 
-# --- 마스터 헤더 ---
+# --- 상단 헤더 아키텍처 ---
 header_col1, header_col2 = st.columns([7, 3])
 with header_col1:
     st.markdown("<h1 style='font-size:32px; font-weight:bold; color:#111111; margin-bottom:0;'>UAM Cruiser-Feeder 통합 의사결정지원 시스템</h1>", unsafe_allow_html=True)
@@ -58,7 +93,6 @@ with header_col1:
 with header_col2:
     st.write("")
     if st.button("↻ 글로벌 파라미터 초기화 (Reset)", use_container_width=True):
-        st.clear_caches()
         st.rerun()
 
 st.markdown("---")
@@ -116,63 +150,39 @@ with tab2:
     util_rate = (demand_per_min_zone / max_cap_per_min) * 100.0 if max_cap_per_min > 0 else 999.0
 
     if util_rate <= 80:
-        wait_desc, util_color = "Smooth (0 Min)", "#198754"
+        wait_desc, util_color = "원활 (대기 0분 수렴)", "#198754"
     elif util_rate < 100:
-        wait_desc, util_color = "Delay (Bottleneck)", "#FD7E14"
+        wait_desc, util_color = "지연 (병목 현상)", "#FD7E14"
     else:
-        wait_desc, util_color = "Capacity Over", "#DC3545"
+        wait_desc, util_color = "마비 (용량 초과)", "#DC3545"
 
     vis_col1, vis_col2 = st.columns([5, 5])
-    
     with vis_col1:
         st.markdown("#### 🗺️ 수요 분산 플로우 차트")
-        fig_flow, ax_flow = plt.subplots(figsize=(6, 5.5), facecolor='white')
-        ax_flow.axis('off')
-        
-        box_data = [
-            (0.75, f"Daily Demand\n{d_val:,} p/d"),
-            (0.53, f"Peak Hour Demand\n{peak_hour_demand:,.0f} p/h"),
-            (0.31, f"Total Call / Min\n{peak_min_total:,.1f} p/m"),
-            (0.09, f"Zone Call / Min\n{demand_per_min_zone:,.2f} p/m")
-        ]
-        
-        for y_pos, text_content in box_data:
-            bbox_props = dict(boxstyle="round,pad=0.6", fc="white", ec="#DEE2E6", lw=2)
-            if "Zone Call" in text_content:
-                bbox_props = dict(boxstyle="round,pad=0.7", fc="#F8F9FA", ec="#0D6EFD", lw=2.5)
-            ax_flow.text(0.5, y_pos, text_content, ha="center", va="center", size=12, weight="bold", color="#212529", bbox=bbox_props)
-            
-        for y_arrow in [0.66, 0.44, 0.22]:
-            ax_flow.annotate('', xy=(0.5, y_arrow-0.03), xytext=(0.5, y_arrow+0.03), arrowprops=dict(arrowstyle="->", color="#ADB5BD", lw=2.5))
-            
-        st.pyplot(fig_flow)
+        st.markdown(f"""
+        <div style='background-color: white; border: 1px solid #E9ECEF; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.01);'>
+            <div class='flow-card-node'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>일일 총 수요</span><br><b style='font-size:22px; color:#495057;'>{d_val:,} 명</b></div>
+            <div class='flow-arrow-down'>↓</div>
+            <div class='flow-card-node'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>첨두시 수요(h)</span><br><b style='font-size:22px; color:#0D6EFD;'>{peak_hour_demand:,.0f} 명</b></div>
+            <div class='flow-arrow-down'>↓</div>
+            <div class='flow-card-node'><span style='color:#6C757D; font-size:13px; font-weight:bold;'>분당 총 호출</span><br><b style='font-size:22px; color:#6F42C1;'>{peak_min_total:,.1f} 명</b></div>
+            <div class='flow-arrow-down'>↓</div>
+            <div class='flow-card-node' style='border-color: #0D6EFD; background-color:#F8F9FA;'><span style='color:#0D6EFD; font-size:13px; font-weight:bold;'>존당 분당 호출 수요</span><br><b style='font-size:24px; color:#198754;'>{demand_per_min_zone:,.2f} 명</b></div>
+        </div>
+        """, unsafe_allow_html=True)
 
     with vis_col2:
         st.markdown("#### 📊 관제 계통 대조군 및 시스템 부하율")
-        fig_gauge, (ax_g, ax_b) = plt.subplots(1, 2, figsize=(7, 5), facecolor='white', gridspec_kw={'width_ratios': [1.2, 1]})
-        
-        ax_g.axis('off')
-        consumed = min(util_rate, 100.0)
-        remaining = max(0.0, 100.0 - consumed)
-        
-        ax_g.pie([consumed, remaining], radius=1.0, colors=[util_color, '#E9ECEF'], startangle=90, counterclock=False, wedgeprops=dict(width=0.22, edgecolor='white', lw=2))
-        ax_g.text(0, 0.1, f"{util_rate:.1f}%", ha='center', va='center', fontsize=26, weight='bold', color='#212529')
-        ax_g.text(0, -0.25, "Utilization", ha='center', va='center', fontsize=12, weight='bold', color='#6C757D')
-        ax_g.text(0, -0.65, f"[{wait_desc}]", ha='center', va='center', fontsize=11, weight='bold', color=util_color, bbox=dict(boxstyle="round,pad=0.4", fc='white', ec=util_color, lw=1.5))
-        
-        ax_b.spines['top'].set_visible(False)
-        ax_b.spines['right'].set_visible(False)
-        ax_b.spines['left'].set_color('#DEE2E6')
-        ax_b.spines['bottom'].set_color('#DEE2E6')
-        
-        bars = ax_b.bar(['Demand', 'Capacity'], [demand_per_min_zone, max_cap_per_min], color=['#0D6EFD', '#868E96'], width=0.5)
-        ax_b.tick_params(axis='both', colors='#495057', labelsize=11)
-        for bar in bars:
-            yval = bar.get_height()
-            ax_b.text(bar.get_x() + bar.get_width()/2, yval + (max(demand_per_min_zone, max_cap_per_min)*0.02), f"{yval:.2f}", ha='center', va='bottom', fontsize=11, weight='bold')
-            
-        fig_gauge.tight_layout()
-        st.pyplot(fig_gauge)
+        # 깨지는 SVG 대신 Streamlit 내장 컨테이너 기반으로 깔끔하게 매칭
+        with st.container(border=True):
+            st.write("")
+            st.metric(label="최종 관제 부하율", value=f"{util_rate:.1f}%", delta=wait_desc, delta_color="normal" if util_rate <= 80 else "inverse")
+            st.progress(min(1.0, util_rate / 100.0))
+            st.write("")
+            st.markdown("---")
+            c1, c2 = st.columns(2)
+            c1.metric("분당 진입 호출 수요", f"{demand_per_min_zone:.2f} p/m")
+            c2.metric("분당 공급 용량 한계 (Cap)", f"{max_cap_per_min:.2f} p/m")
 
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
     st.markdown("<h4 style='color:#0D6EFD; margin-top:0; font-weight:bold;'>🛠️ 수송 관제 파라미터 정밀 제어판</h4>", unsafe_allow_html=True)
@@ -214,7 +224,7 @@ with tab3:
         
     st.write("")
     st.markdown("#### 📊 사회적 총비용 vs 총편익 현재가치 대조 곡선")
-    chart_payload = {"평가 항목": ["Cost (PV)", "Benefit (PV)"], "금액 (억원)": [cost_pv, benefit_pv]}
+    chart_payload = {"평가 항목": ["총비용 현재가치 (PV)", "총편익 현재가치 (PV)"], "금액 (억원)": [cost_pv, benefit_pv]}
     st.bar_chart(data=chart_payload, x="평가 항목", y="금액 (억원)", color="#0D6EFD")
 
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
@@ -234,71 +244,74 @@ with tab4:
     calculated_fov = math.degrees(2 * math.atan(len_val / (2 * alt_val)))
 
     geo_col1, geo_col2 = st.columns([5, 5])
-    
     with geo_col1:
-        st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램 (True-to-Scale)")
-        fig_geo, ax_g2 = plt.subplots(figsize=(6, 5), facecolor='#E8F4F8')
-        ax_g2.set_xlim(0, 500)
-        ax_g2.set_ylim(0, 600)
-        ax_g2.axis('off')
+        st.markdown("#### 🗺️ 물리적 실측 축척 지표 다이어그램")
         
-        ax_g2.axhline(y=50, color='#495057', lw=3)
-        ax_g2.text(15, 25, "Ground (0m)", fontsize=11, weight='bold', color='#6C757D')
+        # 폰트 깨짐이 전혀 없는 고해상도 브라우저 벡터 라이브러리로 순수 이식
+        svg_h = 320
+        scale = 230 / 600.0  
+        px_bldg_h = 250 * scale
+        px_uam_alt = alt_val * scale
+        px_uam_len = max(35, len_val * scale)
         
-        rect_bldg = patches.Rectangle((60, 50), 40, 250, fill=True, color='#CED4DA', ec='#ADB5BD', lw=2)
-        ax_g2.add_patch(rect_bldg)
-        ax_g2.text(80, 315, "63 Building\n(250m)", ha='center', va='bottom', fontsize=11, weight='bold', color='#495057')
-        
-        m_x, m_y = 260, 50 + alt_val
-        ellipse_ship = patches.Ellipse((m_x, m_y), len_val, max(20, len_val * 0.25), fill=True, color='#6C757D', ec='#343A40', lw=2)
-        ax_g2.add_patch(ellipse_ship)
-        ax_g2.text(m_x, m_y + max(20, len_val*0.25) + 5, f"Mothership ({len_val}m)", ha='center', va='bottom', fontsize=11, weight='bold', color='#0D6EFD')
-        
-        p_x, p_y = 420, 50
-        ax_g2.plot(p_x, p_y + 35, marker='o', markersize=9, color='#212529')  
-        ax_g2.plot([p_x, p_x], [p_y + 15, p_y + 30], color='#212529', lw=2.5)  
-        ax_g2.plot([p_x, p_x - 10], [p_y + 25, p_y + 18], color='#212529', lw=2)  
-        ax_g2.plot([p_x, p_x + 10], [p_y + 25, p_y + 18], color='#212529', lw=2)  
-        ax_g2.plot([p_x, p_x - 8], [p_y + 15, p_y], color='#212529', lw=2.2)   
-        ax_g2.plot([p_x, p_x + 8], [p_y + 15, p_y], color='#212529', lw=2.2)   
-        ax_g2.text(p_x, p_y - 25, "Observer", ha='center', fontsize=11, weight='bold', color='#212529')
-        
-        ax_g2.plot([p_x, m_x - len_val/2], [p_y + 35, m_y], color='#DC3545', linestyle='--', lw=2)
-        ax_g2.plot([p_x, m_x + len_val/2], [p_y + 35, m_y], color='#DC3545', linestyle='--', lw=2)
-        
-        ax_g2.text(480, 560, f"Altitude: {alt_val}m", ha='right', fontsize=12, weight='bold', color='#0D6EFD')
-        st.pyplot(fig_geo)
+        st.markdown(f"""
+        <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%;'>
+            <div style='position: absolute; left: 45px; bottom: 50px; width: 45px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
+                <b style='font-size: 11px; color: #495057; text-align: center;'>63빌딩<br>(250m)</b>
+            </div>
+            <div style='position: absolute; left: 210px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(14, px_uam_len*0.28)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
+                <b style='font-size: 10px; color: white; white-space: nowrap;'>모선({len_val}m)</b>
+            </div>
+            <div style='position: absolute; left: 370px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;'>
+                <svg width="20" height="34" viewBox="0 0 16 32">
+                    <circle cx="8" cy="4" r="3.5" fill="#212529" />
+                    <line x1="8" y1="7" x2="8" y2="19" stroke="#212529" stroke-width="2.5" />
+                    <line x1="8" y1="11" x2="2" y2="15" stroke="#212529" stroke-width="2.2" />
+                    <line x1="8" y1="11" x2="14" y2="15" stroke="#212529" stroke-width="2.2" />
+                    <line x1="8" y1="19" x2="4" y2="30" stroke="#212529" stroke-width="2.2" />
+                    <line x1="8" y1="19" x2="12" y2="30" stroke="#212529" stroke-width="2.2" />
+                </svg>
+                <span style='font-size: 11px; color: #212529; font-weight: bold; margin-top:2px;'>관찰자</span>
+            </div>
+            <svg style='position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;'>
+                <line x1="380" y1="{svg_h - 82}" x2="{210 - px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+                <line x1="380" y1="{svg_h - 82}" x2="{210 + px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+            </svg>
+            <div style='position: absolute; left: 0; bottom: 50px; width: 100%; height: 4px; background-color: #495057;'></div>
+            <span style='position: absolute; left: 15px; bottom: 18px; font-size: 12px; font-weight: bold; color: #495057;'>지표면 (0m)</span>
+            <span style='position: absolute; right: 20px; top: 15px; font-size: 13px; font-weight: bold; color: #0D6EFD;'>실시간 비행고도: {alt_val}m</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     with geo_col2:
         st.markdown("#### 👁️ 1인칭 체감 뷰 (FPV) 및 수용성 대조")
         fov_card_color = "#198754" if calculated_fov <= 15.6 else "#DC3545"
-        fov_judgement = "Acceptable (시내버스 15.6도 미만)" if calculated_fov <= 15.6 else "Visual Pressure"
+        fov_judgement = "수용 가능 규격 (시내버스 미만)" if calculated_fov <= 15.6 else "위압감 발생 구역 조율 권장"
         
-        fig_bar, ax_bar = plt.subplots(figsize=(6, 5), facecolor='#212529')
-        ax_bar.set_facecolor('#212529')
-        ax_bar.spines['top'].set_visible(False)
-        ax_bar.spines['right'].set_visible(False)
-        ax_bar.spines['left'].set_visible(False)
-        ax_bar.spines['bottom'].set_color('#495057')
-        
-        labels_fov = ['Mothership (Now)', '63 Building (1km)', 'City Bus (40m)']
-        values_fov = [calculated_fov, 14.10, 15.60]
-        colors_fov = ['#DC3545', '#0D6EFD', '#198754']
-        
-        bars_fov = ax_bar.barh(labels_fov, values_fov, color=colors_fov, height=0.45)
-        ax_bar.set_xlim(0, 60) 
-        ax_bar.tick_params(axis='x', colors='white', labelsize=11)
-        ax_bar.tick_params(axis='y', colors='white', labelsize=12)
-        
-        for bar in bars_fov:
-            xval = bar.get_width()
-            ax_bar.text(xval + 1.5, bar.get_y() + bar.get_height()/2, f"{xval:.2f}°", ha='left', va='center', fontsize=12, color='white')
+        bus_pct = (15.60 / 60.0) * 100
+        bldg_pct = (14.10 / 60.0) * 100
+        uam_pct = min(100.0, (calculated_fov / 60.0) * 100)
+
+        # 레퍼런스 투영 지표 막대그래프 완벽 이식
+        st.markdown(f"""
+        <div style='background-color: #212529; color: white; height: {svg_h}px; padding: 24px; border-radius:12px; overflow:hidden;'>
+            <p style='font-size: 18px; font-weight: bold; color: #FFC107; margin-bottom: 2px; margin-top:0;'>실제 체감 시야각 (FOV): {calculated_fov:.2f}°</p>
+            <p style='font-size: 14px; color: {fov_card_color}; font-weight: bold; margin-bottom: 20px;'>공학적 결론: {fov_judgement}</p>
             
-        ax_bar.text(2, 2.7, f"True FOV: {calculated_fov:.2f}°", fontsize=18, color='#FFC107')
-        ax_bar.text(2, 2.4, f"Conclusion: {fov_judgement}", fontsize=12, color=fov_card_color)
-        
-        fig_bar.tight_layout()
-        st.pyplot(fig_bar)
+            <div class='bar-container'>
+                <div class='bar-label-flex'><span>40m 앞 일반 시내버스 차로 통과 시</span><span>15.60°</span></div>
+                <div class='bar-bg-track'><div class='bar-fill-progress' style='background-color:#198754; width:{bus_pct}%;'></div></div>
+            </div>
+            <div class='bar-container'>
+                <div class='bar-label-flex'><span>1km 거리 밖 여의도 63빌딩 조망 시</span><span>14.10°</span></div>
+                <div class='bar-bg-track'><div class='bar-fill-progress' style='background-color:#0D6EFD; width:{bldg_pct}%;'></div></div>
+            </div>
+            <div class='bar-container'>
+                <div class='bar-label-flex' style='color:#FFC107;'><span>현재 조건부 공중 UAM 모선 조망 시</span><span>{calculated_fov:.2f}°</span></div>
+                <div class='bar-bg-track'><div class='bar-fill-progress' style='background-color:#DC3545; width:{uam_pct}%;'></div></div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
     st.markdown("<h4 style='color:#6F42C1; margin-top:0; font-weight:bold;'>🛠️ 공역 기하학 및 기체 제원 제어판</h4>", unsafe_allow_html=True)
