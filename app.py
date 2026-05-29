@@ -262,24 +262,29 @@ with tab4:
 
     geo_col1, geo_col2 = st.columns([5, 5])
     with geo_col1:
-        st.markdown("##### 🗺️ 물리적 실측 축척 다이어그램")
+        st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램")
         
-        svg_max_h = 280
-        scale_ratio = 200 / 600.0  
-        px_bldg_h = 250 * scale_ratio
-        px_uam_alt = alt_v * scale_ratio
-        px_uam_len = max(35, len_v * scale_ratio)
+        # 가변 유실 원천 차단: 비율에 맞춘 미터당 픽셀 매핑 계산
+        svg_h = 320
+        scale = 230 / 600.0  
+        px_bldg_h = 250 * scale
+        
+        # [수정 1] 모선 크기 가시성 대폭 확대 (최소 크기 및 비례 증가율 상향)
+        px_uam_alt = alt_val * scale
+        px_uam_len = max(60, len_val * scale * 1.5) 
         
         st.markdown(f"""
-        <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 8px; height: {svg_max_h}px; position: relative; overflow:hidden;'>
-            <div style='position: absolute; left: 45px; bottom: 40px; width: 45px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
-                <span style='font-size: 11px; color: #495057; font-weight: bold; text-align: center;'>63빌딩<br>(250m)</span>
+        <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%;'>
+            <div style='position: absolute; left: 30px; bottom: 50px; width: 65px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
+                <b style='font-size: 13px; color: #495057; text-align: center; line-height: 1.2;'>63빌딩<br>(250m)</b>
             </div>
-            <div style='position: absolute; left: 200px; bottom: {40 + px_uam_alt}px; width: {px_uam_len}px; height: {max(14, px_uam_len*0.28)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
-                <span style='font-size: 10px; color: white; font-weight: bold; white-space: nowrap;'>모선({len_v}m)</span>
+            
+            <div style='position: absolute; left: 240px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(20, px_uam_len*0.3)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
+                <b style='font-size: 11px; color: white; white-space: nowrap;'>모선({len_val}m)</b>
             </div>
-            <div style='position: absolute; left: 350px; bottom: 40px; width: 30px; height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;'>
-                <svg width="18" height="32" viewBox="0 0 16 32">
+            
+            <div style='position: absolute; left: 180px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;'>
+                <svg width="20" height="34" viewBox="0 0 16 32">
                     <circle cx="8" cy="4" r="3.5" fill="#212529" />
                     <line x1="8" y1="7" x2="8" y2="19" stroke="#212529" stroke-width="2.5" />
                     <line x1="8" y1="11" x2="2" y2="15" stroke="#212529" stroke-width="2.2" />
@@ -287,15 +292,17 @@ with tab4:
                     <line x1="8" y1="19" x2="4" y2="30" stroke="#212529" stroke-width="2.2" />
                     <line x1="8" y1="19" x2="12" y2="30" stroke="#212529" stroke-width="2.2" />
                 </svg>
-                <span style='font-size: 11px; color: #212529; font-weight: bold; white-space:nowrap;'>관찰자</span>
+                <span style='font-size: 11px; color: #212529; font-weight: bold; margin-top:2px;'>관찰자</span>
             </div>
+            
             <svg style='position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;'>
-                <line x1="359" y1="{svg_max_h - 70}" x2="{200 - px_uam_len/2}" y2="{svg_max_h - 40 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
-                <line x1="359" y1="{svg_max_h - 70}" x2="{200 + px_uam_len/2}" y2="{svg_max_h - 40 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+                <line x1="190" y1="{svg_h - 82}" x2="{240 - px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+                <line x1="190" y1="{svg_h - 82}" x2="{240 + px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
             </svg>
-            <div style='position: absolute; left: 0; bottom: 40px; width: 100%; height: 3px; background-color: #495057;'></div>
-            <span style='position: absolute; left: 15px; bottom: 15px; font-size: 12px; font-weight: bold; color: #6C757D;'>지표면 (0m)</span>
-            <span style='position: absolute; right: 20px; top: 15px; font-size: 12px; font-weight: bold; color: #0D6EFD;'>실시간 비행고도: {alt_v}m</span>
+            
+            <div style='position: absolute; left: 0; bottom: 50px; width: 100%; height: 4px; background-color: #495057;'></div>
+            <span style='position: absolute; left: 15px; bottom: 18px; font-size: 12px; font-weight: bold; color: #495057;'>지표면 (0m)</span>
+            <span style='position: absolute; right: 20px; top: 15px; font-size: 13px; font-weight: bold; color: #0D6EFD;'>실시간 비행고도: {alt_val}m</span>
         </div>
         """, unsafe_allow_html=True)
 
