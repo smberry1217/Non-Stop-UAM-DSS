@@ -93,9 +93,12 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
     with content_col2:
-        google_drive_video_url = "https://drive.google.com/file/d/1ABnXmuFMB7q_ItPPfK_1opbGXuiQojXF/view?usp=sharing"
-        st.video(google_drive_video_url, loop=True, autoplay=True, muted=True)
-        st.markdown("<p style='text-align:center; color:#6C757D; font-weight:bold; font-size:13px; margin-top:5px;'>[상대속도 0 도킹 메커니즘 시각화]</p>", unsafe_allow_html=True)
+        file_id = "1ABnXmuFMB7q_ItPPfK_1opbGXuiQojXF"
+        direct_video_url = f"https://docs.google.com/uc?export=download&id={file_id}"
+        
+        # 변환된 직속 URL을 st.video에 주입
+        st.video(direct_video_url, loop=True, autoplay=True, muted=True)
+        st.markdown("<p style='text-align:center; color:#6C757D; font-weight:bold; font-size:13px; margin-top:5px;'>[모선- 도킹 메커니즘 시각화]</p>", unsafe_allow_html=True)
 
 # ==========================================
 # TAB 2: 운용 및 관제 시뮬레이션
