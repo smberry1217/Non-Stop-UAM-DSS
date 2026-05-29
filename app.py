@@ -264,14 +264,13 @@ with tab4:
     with geo_col1:
         st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램")
         
-        # 가변 유실 원천 차단: 비율에 맞춘 미터당 픽셀 매핑 계산
         svg_h = 320
         scale = 230 / 600.0  
         px_bldg_h = 250 * scale
         
-        # [수정 1] 모선 크기 가시성 대폭 확대 (최소 크기 및 비례 증가율 상향)
-        px_uam_alt = alt_val * scale
-        px_uam_len = max(60, len_val * scale * 1.5) 
+        # alt_val, len_val을 alt_v, len_v로 변수명 수정
+        px_uam_alt = alt_v * scale
+        px_uam_len = max(60, len_v * scale * 1.5) 
         
         st.markdown(f"""
         <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%;'>
@@ -280,7 +279,7 @@ with tab4:
             </div>
             
             <div style='position: absolute; left: 240px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(20, px_uam_len*0.3)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
-                <b style='font-size: 11px; color: white; white-space: nowrap;'>모선({len_val}m)</b>
+                <b style='font-size: 11px; color: white; white-space: nowrap;'>모선({len_v}m)</b>
             </div>
             
             <div style='position: absolute; left: 180px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;'>
@@ -302,7 +301,7 @@ with tab4:
             
             <div style='position: absolute; left: 0; bottom: 50px; width: 100%; height: 4px; background-color: #495057;'></div>
             <span style='position: absolute; left: 15px; bottom: 18px; font-size: 12px; font-weight: bold; color: #495057;'>지표면 (0m)</span>
-            <span style='position: absolute; right: 20px; top: 15px; font-size: 13px; font-weight: bold; color: #0D6EFD;'>실시간 비행고도: {alt_val}m</span>
+            <span style='position: absolute; right: 20px; top: 15px; font-size: 13px; font-weight: bold; color: #0D6EFD;'>실시간 비행고도: {alt_v}m</span>
         </div>
         """, unsafe_allow_html=True)
 
