@@ -131,12 +131,10 @@ with tab1:
         """, unsafe_allow_html=True)
     
     with col2:
-        # 유튜브 비디오 연동 혹은 mp4 파일 재생 (전시장 16:9 꽉 찬 뷰 제공)
-        video_path = "uam_video.mp4"
-        if os.path.exists(video_path):
-            st.video(video_path, start_time=0, loop=True, autoplay=True, muted=True)
-        else:
-            st.error("💡 시연용 uam_video.mp4 동영상을 서버 저장소 폴더에 추가해 주세요.")
+        # 구글 드라이브 직링크 주소로 변환하여 삽입
+        google_drive_video_url = "https://drive.google.com/file/d/1ABnXmuFMB7q_ItPPfK_1opbGXuiQojXF/view?usp=sharing"
+        st.video(google_drive_video_url, loop=True, autoplay=True, muted=True)
+
 
 # --- TAB 2: 운용 및 관제 시뮬레이션 ---
 with tab2:
