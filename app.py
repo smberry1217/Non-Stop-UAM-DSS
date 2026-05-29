@@ -253,6 +253,9 @@ with tab3:
 # ==========================================
 # TAB 4: 공역 기하학 및 시야각 실증
 # ==========================================
+# ==========================================
+# TAB 4: 공역 기하학 및 시야각 실증
+# ==========================================
 with tab4:
     if "t4_alt" not in st.session_state: st.session_state.t4_alt = 400
     if "t4_len" not in st.session_state: st.session_state.t4_len = 100
@@ -264,24 +267,41 @@ with tab4:
     with geo_col1:
         st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램")
         
+        # --- 기하학 좌표 정밀 재계산 구역 ---
         svg_h = 320
         scale = 230 / 600.0  
+        
+        # 지면(Bottom line)의 Y 위치 (Top 기준 고정 좌표)
+        floor_y = svg_h - 50  # 320 - 50 = 270px
+        
+        # 각 요소의 물리적 픽셀 높이/길이 변환
         px_bldg_h = 250 * scale
         px_uam_alt = alt_v * scale
         px_uam_len = max(60, len_v * scale * 1.5) 
         
-        # html 샌드박스 컴포넌트로 감싸 코드가 깨져 쌩으로 노출되는 현상 차단
+        # [정밀 보정] 관찰자(사람)의 X, Y 좌표 (눈높이 기준)
+        observer_x = 180 + 20  # 관찰자 div left(180) + 내부 중앙 오프셋(20) = 200px
+        observer_eye_y = floor_y - 30  # 지표면에서 사람 머리 높이만큼 위쪽 (약 240px 지점)
+        
+        # 모선(Cruiser)의 중심 및 좌우 끝단 좌표
+        uam_center_x = 240
+        uam_center_y = floor_y - px_uam_alt
+        uam_left_x = uam_center_x - (px_uam_len / 2)
+        uam_right_x = uam_center_x + (px_uam_len / 2)
+
+        # HTML/CSS 중괄호 충돌 방지를 위해 스타일과 변수를 분리하거나 이스케이프({{}}) 처리 완료
         st.components.v1.html(f"""
         <div style='font-family: sans-serif; background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%; box-sizing: border-box;'>
+            
             <div style='position: absolute; left: 30px; bottom: 50px; width: 65px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
                 <b style='font-size: 13px; color: #495057; text-align: center; line-height: 1.2;'>63빌딩<br>(250m)</b>
             </div>
             
-            <div style='position: absolute; left: 240px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(20, px_uam_len*0.3)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
+            <div style='position: absolute; left: {uam_center_x}px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(20, px_uam_len*0.3)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%); z-index: 2;'>
                 <b style='font-size: 11px; color: white; white-space: nowrap;'>모선({len_v}m)</b>
             </div>
             
-            <div style='position: absolute; left: 180px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;'>
+            <div style='position: absolute; left: 180px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 3;'>
                 <svg width="20" height="34" viewBox="0 0 16 32">
                     <circle cx="8" cy="4" r="3.5" fill="#212529" />
                     <line x1="8" y1="7" x2="8" y2="19" stroke="#212529" stroke-width="2.5" />
@@ -293,9 +313,9 @@ with tab4:
                 <span style='font-size: 11px; color: #212529; font-weight: bold; margin-top:2px;'>관찰자</span>
             </div>
             
-            <svg style='position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;'>
-                <line x1="190" y1="{svg_h - 82}" x2="{240 - px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
-                <line x1="190" y1="{svg_h - 82}" x2="{240 + px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+            <svg style='position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;'>
+                <line x1="{observer_x}" y1="{observer_eye_y}" x2="{uam_left_x}" y2="{uam_center_y}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+                <line x1="{observer_x}" y1="{observer_eye_y}" x2="{uam_right_x}" y2="{uam_center_y}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
             </svg>
             
             <div style='position: absolute; left: 0; bottom: 50px; width: 100%; height: 4px; background-color: #495057;'></div>
@@ -313,7 +333,6 @@ with tab4:
         bldg_w_pct = (14.10 / 60.0) * 100
         uam_w_pct = min(100.0, (calculated_fov / 60.0) * 100)
 
-        # 63빌딩과 모선의 시인성 확보를 위해 배율 및 간격을 수정한 샌드박스 엔진
         st.components.v1.html(f"""
         <div style="font-family: sans-serif; background-color: #212529; color: white; height: 280px; padding: 22px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;">
             <p style="font-size: 17px; font-weight: bold; color: #FFC107; margin-bottom: 2px; margin-top:0;">실제 체감 시야각 (FOV): {calculated_fov:.2f}°</p>
