@@ -93,11 +93,14 @@ with tab1:
             </div>
             """, unsafe_allow_html=True)
     with content_col2:
+        # 구글 드라이브 임베드용 문서 주소로 변경
         file_id = "1ABnXmuFMB7q_ItPPfK_1opbGXuiQojXF"
-        direct_video_url = f"https://docs.google.com/uc?export=download&id={file_id}"
+        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
         
-        # 변환된 직속 URL을 st.video에 주입
-        st.video(direct_video_url, loop=True, autoplay=True, muted=True)
+        # HTML iframe을 사용하여 안전하게 화면에 송출 (높이는 자유롭게 조절 가능)
+        st.components.v1.html(f"""
+            <iframe src="{embed_url}" width="100%" height="360" allow="autoplay" style="border: none; border-radius: 8px;"></iframe>
+        """, height=360)
         st.markdown("<p style='text-align:center; color:#6C757D; font-weight:bold; font-size:13px; margin-top:5px;'>[모선- 도킹 메커니즘 시각화]</p>", unsafe_allow_html=True)
 
 # ==========================================
