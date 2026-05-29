@@ -267,29 +267,30 @@ with tab4:
     with geo_col1:
         st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램")
         
-        # --- 기하학 좌표 정밀 재계산 구역 ---
+        # --- 기하학 및 원거리 구도 정밀 재계산 구역 ---
         svg_h = 320
         scale = 230 / 600.0  
         
-        # 지면(Bottom line)의 Y 위치 (Top 기준 고정 좌표)
-        floor_y = svg_h - 50  # 320 - 50 = 270px
+        # 기준선 고정 (하단 회색 지표면 선의 상단 Y 좌표)
+        floor_y = svg_h - 50  # 270px
         
-        # 각 요소의 물리적 픽셀 높이/길이 변환
+        # 각 요소의 물리적 픽셀 스케일링
         px_bldg_h = 250 * scale
         px_uam_alt = alt_v * scale
         px_uam_len = max(60, len_v * scale * 1.5) 
         
-        # [정밀 보정] 관찰자(사람)의 X, Y 좌표 (눈높이 기준)
-        observer_x = 180 + 20  # 관찰자 div left(180) + 내부 중앙 오프셋(20) = 200px
-        observer_eye_y = floor_y - 30  # 지표면에서 사람 머리 높이만큼 위쪽 (약 240px 지점)
+        # [구도 조정] 두 번째 예시 이미지처럼 우측 멀리 모선 배치 (X축 거리 확장)
+        observer_x = 360       # 관찰자를 중간 지점으로 전진 배치 (63빌딩과 거리 확보)
+        uam_center_x = 520     # 모선을 우측 상공 끝자락으로 이동시켜 원거리 대각선 구도 연출
         
-        # 모선(Cruiser)의 중심 및 좌우 끝단 좌표
-        uam_center_x = 240
+        # 관찰자 눈높이 정밀 세팅 (지표면에서 딱 사람 키만큼만 위로)
+        observer_eye_y = floor_y - 34  # 발이 바닥에 붙은 상태에서 눈높이 좌표 계산
+        
+        # 모선 중심 및 좌우 끝단 좌표 계산
         uam_center_y = floor_y - px_uam_alt
         uam_left_x = uam_center_x - (px_uam_len / 2)
         uam_right_x = uam_center_x + (px_uam_len / 2)
 
-        # HTML/CSS 중괄호 충돌 방지를 위해 스타일과 변수를 분리하거나 이스케이프({{}}) 처리 완료
         st.components.v1.html(f"""
         <div style='font-family: sans-serif; background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%; box-sizing: border-box;'>
             
@@ -297,11 +298,7 @@ with tab4:
                 <b style='font-size: 13px; color: #495057; text-align: center; line-height: 1.2;'>63빌딩<br>(250m)</b>
             </div>
             
-            <div style='position: absolute; left: {uam_center_x}px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(20, px_uam_len*0.3)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%); z-index: 2;'>
-                <b style='font-size: 11px; color: white; white-space: nowrap;'>모선({len_v}m)</b>
-            </div>
-            
-            <div style='position: absolute; left: 180px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; z-index: 3;'>
+            <div style='position: absolute; left: {observer_x - 10}px; bottom: 50px; width: 20px; height: 34px; z-index: 3;'>
                 <svg width="20" height="34" viewBox="0 0 16 32">
                     <circle cx="8" cy="4" r="3.5" fill="#212529" />
                     <line x1="8" y1="7" x2="8" y2="19" stroke="#212529" stroke-width="2.5" />
@@ -310,12 +307,18 @@ with tab4:
                     <line x1="8" y1="19" x2="4" y2="30" stroke="#212529" stroke-width="2.2" />
                     <line x1="8" y1="19" x2="12" y2="30" stroke="#212529" stroke-width="2.2" />
                 </svg>
-                <span style='font-size: 11px; color: #212529; font-weight: bold; margin-top:2px;'>관찰자</span>
+            </div>
+            <div style='position: absolute; left: {observer_x - 30}px; bottom: 25px; width: 60px; text-align: center; z-index: 3;'>
+                <span style='font-size: 11px; color: #212529; font-weight: bold;'>관찰자</span>
+            </div>
+            
+            <div style='position: absolute; left: {uam_center_x}px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(20, px_uam_len*0.3)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%); z-index: 2;'>
+                <b style='font-size: 11px; color: white; white-space: nowrap;'>모선({len_v}m)</b>
             </div>
             
             <svg style='position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;'>
-                <line x1="{observer_x}" y1="{observer_eye_y}" x2="{uam_left_x}" y2="{uam_center_y}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
-                <line x1="{observer_x}" y1="{observer_eye_y}" x2="{uam_right_x}" y2="{uam_center_y}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
+                <line x1="{observer_x}" y1="{observer_eye_y}" x2="{uam_left_x}" y2="{uam_center_y}" stroke="#DC3545" stroke-dasharray="4,4" stroke-width="2" />
+                <line x1="{observer_x}" y1="{observer_eye_y}" x2="{uam_right_x}" y2="{uam_center_y}" stroke="#DC3545" stroke-dasharray="4,4" stroke-width="2" />
             </svg>
             
             <div style='position: absolute; left: 0; bottom: 50px; width: 100%; height: 4px; background-color: #495057;'></div>
