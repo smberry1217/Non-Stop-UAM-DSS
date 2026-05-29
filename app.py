@@ -1,14 +1,14 @@
 import streamlit as st
 import math
 
-# --- 페이지 기본 설정 ---
+# --- 페이지 기본 설정 (전시용 와이드 스크린 락) ---
 st.set_page_config(
     page_title="UAM Cruiser-Feeder 통합 의사결정지원 시스템",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# --- 글로벌 CSS 스타일 (시인성 극대화 및 모바일 가변 격자 방지) ---
+# --- 글로벌 모던 테마 CSS 스타일 (가변 텍스트 깨짐 및 가독성 100% 방지) ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -16,7 +16,16 @@ st.markdown("""
         font-family: 'KoPubWorld돋움체 Medium', 'Noto Sans KR', sans-serif;
         background-color: #F8F9FA;
     }
-    .main-box {
+    
+    /* 탭 메뉴 대형화 및 시인성 개선 */
+    .stTabs [data-baseweb="tab"] {
+        font-size: 16px !important;
+        font-weight: bold !important;
+        padding: 14px 28px !important;
+    }
+
+    /* 플로우 차트 및 그래픽용 모던 카드 */
+    .visual-card {
         background-color: white;
         border: 2px solid #E9ECEF;
         border-radius: 14px;
@@ -24,28 +33,40 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         margin-bottom: 20px;
     }
-    .metric-title {
-        font-size: 16px;
-        font-weight: bold;
-        color: #6C757D;
-        margin-bottom: 5px;
+    .flow-node {
+        text-align: center;
+        padding: 12px;
+        border: 2px solid #E9ECEF;
+        border-radius: 8px;
+        background-color: #FFFFFF;
     }
-    .metric-value {
-        font-size: 32px;
+    .flow-arrow {
+        text-align: center;
+        color: #ADB5BD;
+        font-size: 18px;
+        margin: 2px 0;
         font-weight: bold;
-        margin-bottom: 10px;
     }
+    
+    /* 최하단 강제 유배 제어판 박스 */
     .footer-control-panel {
         background-color: #FFFFFF;
         border: 2px solid #0D6EFD;
         border-radius: 16px;
         padding: 30px;
-        margin-top: 30px;
+        margin-top: 40px;
+        box-shadow: 0 8px 24px rgba(13, 110, 253, 0.05);
     }
-    label [data-testid="stWidgetLabel"] p {
-        font-size: 16px !important;
-        font-weight: bold !important;
-        color: #212529 !important;
+    
+    /* 지표 타이포그래피 정렬 */
+    .custom-label {
+        font-size: 14px;
+        font-weight: bold;
+        color: #6C757D;
+    }
+    .custom-value {
+        font-size: 24px;
+        font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -57,7 +78,7 @@ BASE_BENEFIT_VOTS = 1586.4
 BASE_BENEFIT_ETC = 293.3   
 PVIFA_30 = 16.28
 
-# --- 마스터 헤더 ---
+# --- 메인 헤더 레이아웃 ---
 header_col1, header_col2 = st.columns([7, 3])
 with header_col1:
     st.markdown("<h1 style='font-size:32px; font-weight:bold; color:#111111; margin-bottom:0;'>UAM Cruiser-Feeder 통합 의사결정지원 시스템</h1>", unsafe_allow_html=True)
@@ -115,6 +136,7 @@ with tab2:
 
     d_val, z_val, c_val, p_val, pods_val = st.session_state.t2_demand, st.session_state.t2_zones, st.session_state.t2_cycle, st.session_state.t2_peak, st.session_state.t2_pods
 
+    # 코어 연산 알고리즘
     peak_hour_demand = d_val * (p_val / 100.0)
     peak_min_total = peak_hour_demand / 60.0
     demand_per_min_zone = peak_min_total / z_val
@@ -122,52 +144,42 @@ with tab2:
     util_rate = (demand_per_min_zone / max_cap_per_min) * 100.0 if max_cap_per_min > 0 else 999.0
 
     if util_rate <= 80:
-        wait_time_txt, wait_desc, util_color = "0 분", "원활", "#198754"
+        wait_desc, util_color = "원활 (대기 없음)", "#198754"
     elif util_rate < 100:
-        wait_val = ((util_rate - 80) / 20) * 5.0
-        wait_time_txt, wait_desc, util_color = f"{wait_val:.1f} 분", "병목 지연", "#FD7E14"
+        wait_desc, util_color = "병목 지연 발생", "#FD7E14"
     else:
-        wait_time_txt, wait_desc, util_color = "마비", "용량 초과", "#DC3545"
+        wait_desc, util_color = "용량 초과 마비", "#DC3545"
 
     vis_col1, vis_col2 = st.columns([5, 5])
     with vis_col1:
         st.markdown("#### 🗺️ 수요 분산 플로우 차트")
         st.markdown(f"""
-        <div class='main-box'>
-            <div style='text-align:center; padding:12px; border:2px solid #E9ECEF; border-radius:8px; margin-bottom:8px;'>
-                <small style='color:#6C757D; font-weight:bold;'>일일 총 수요</small><br><b style='font-size:24px; color:#495057;'>{d_val:,} 명</b>
-            </div>
-            <div style='text-align:center; color:#ADB5BD; font-size:16px;'>↓</div>
-            <div style='text-align:center; padding:12px; border:2px solid #E9ECEF; border-radius:8px; margin-bottom:8px;'>
-                <small style='color:#6C757D; font-weight:bold;'>첨두시 수요(h)</small><br><b style='font-size:24px; color:#0D6EFD;'>{peak_hour_demand:,.0f} 명</b>
-            </div>
-            <div style='text-align:center; color:#ADB5BD; font-size:16px;'>↓</div>
-            <div style='text-align:center; padding:12px; border:2px solid #E9ECEF; border-radius:8px; margin-bottom:8px;'>
-                <small style='color:#6C757D; font-weight:bold;'>분당 총 호출</small><br><b style='font-size:24px; color:#6F42C1;'>{peak_min_total:,.1f} 명</b>
-            </div>
-            <div style='text-align:center; color:#ADB5BD; font-size:16px;'>↓</div>
-            <div style='text-align:center; padding:12px; border:2px solid #0D6EFD; border-radius:8px; background-color:#F8F9FA;'>
-                <small style='color:#0D6EFD; font-weight:bold;'>존당 분당 호출 수요</small><br><b style='font-size:26px; color:#198754;'>{demand_per_min_zone:,.2f} 명</b>
-            </div>
+        <div class='visual-card'>
+            <div class='flow-node'><span class='custom-label'>일일 총 수요</span><br><b class='custom-value' style='color:#495057;'>{d_val:,} 명</b></div>
+            <div class='flow-arrow'>↓</div>
+            <div class='flow-node'><span class='custom-label'>첨두시 수요(h)</span><br><b class='custom-value' style='color:#0D6EFD;'>{peak_hour_demand:,.0f} 명</b></div>
+            <div class='flow-arrow'>↓</div>
+            <div class='flow-node'><span class='custom-label'>분당 총 호출</span><br><b class='custom-value' style='color:#6F42C1;'>{peak_min_total:,.1f} 명</b></div>
+            <div class='flow-arrow'>↓</div>
+            <div class='flow-node' style='border-color:#0D6EFD; background-color:#F8F9FA;'><span class='custom-label' style='color:#0D6EFD;'>존당 분당 호출 수요</span><br><b class='custom-value' style='color:#198754;'>{demand_per_min_zone:,.2f} 명</b></div>
         </div>
         """, unsafe_allow_html=True)
 
     with vis_col2:
         st.markdown("#### 📊 관제 계통 대조군 및 시스템 부하율")
-        st.markdown(f"""
-        <div class='main-box' style='text-align:center; height:395px;'>
-            <p class='metric-title' style='font-size:18px;'>시스템 부하율</p>
-            <p class='metric-value' style='color:{util_color}; font-size:48px; margin-bottom:5px;'>{util_rate:.1f}%</p>
-            <span style='background-color:{util_color}; color:white; padding:6px 16px; border-radius:20px; font-weight:bold; font-size:14px;'>{wait_desc} ({wait_time_txt})</span>
-            <div style='margin-top:45px; border-top:1px solid #E9ECEF; padding-top:30px; display:flex; justify-content:space-around;'>
-                <div><small style='color:#6C757D; font-weight:bold;'>호출 수요</small><br><b style='color:#0D6EFD; font-size:24px;'>{demand_per_min_zone:.2f}</b><small style='color:#6C757D;'> p/m</small></div>
-                <div><small style='color:#6C757D; font-weight:bold;'>공급 한계(Cap)</small><br><b style='color:#495057; font-size:24px;'>{max_cap_per_min:.2f}</b><small style='color:#6C757D;'> p/m</small></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+        with st.container(border=True):
+            st.write("")
+            st.metric(label="시스템 부하율", value=f"{util_rate:.1f}%", delta=wait_desc, delta_color="normal" if util_rate <= 80 else "inverse")
+            st.progress(min(1.0, util_rate / 100.0))
+            st.write("")
+            st.markdown("---")
+            c1, c2 = st.columns(2)
+            c1.metric("분당 호출 수요", f"{demand_per_min_zone:.2f} p/m")
+            c2.metric("분당 최대 공급 한계(Cap)", f"{max_cap_per_min:.2f} p/m")
 
+    # 하단 제어판
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
-    st.markdown("<h4 style='color:#0D6EFD; margin-top:0; font-weight:bold;'>🛠️ 수송 관제 파라미터 정밀 제어판 (하단 레이아웃)</h4>", unsafe_allow_html=True)
+    st.markdown("<h4 style='color:#0D6EFD; margin-top:0; font-weight:bold;'>🛠️ 수송 관제 파라미터 정밀 제어판</h4>", unsafe_allow_html=True)
     slider_col1, slider_col2 = st.columns(2)
     with slider_col1:
         st.slider("일일 총 수요 (명)", 50000, 150000, 93500, step=500, key="t2_demand_slider", on_change=lambda: st.session_state.update({"t2_demand": st.session_state.t2_demand_slider}))
@@ -200,11 +212,10 @@ with tab3:
 
     ec_col1, ec_col2 = st.columns(2)
     with ec_col1:
-        bc_card_color = "#198754" if bc_ratio >= 1.0 else "#DC3545"
-        st.markdown(f"<div class='card-dashboard'><div class='metric-card-title'>Benefit-Cost Ratio (B/C)</div><div class='metric-card-value' style='color:{bc_card_color};'>{bc_ratio:.2f}</div></div>", unsafe_allow_html=True)
+        st.metric(label="Benefit-Cost Ratio (B/C)", value=f"{bc_ratio:.2f}")
     with ec_col2:
-        st.markdown(f"<div class='card-dashboard'><div class='metric-card-title'>순현재가치 (NPV)</div><div class='metric-card-value' style='color:#212529;'>{calculated_npv:,.0f} 억원</div></div>", unsafe_allow_html=True)
-
+        st.metric(label="순현재가치 (NPV)", value=f"{calculated_npv:,.0f} 억원")
+        
     st.write("")
     st.markdown("#### 📊 비용 vs 편익 현재가치 대조 곡선")
     chart_payload = {"평가 항목": ["총비용 현재가치 (PV)", "총편익 현재가치 (PV)"], "금액 (억원)": [cost_pv, benefit_pv]}
@@ -217,7 +228,7 @@ with tab3:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ==========================================
-# TAB 4: 공역 기하학 및 시야각 실증 (물리 차트 완벽 복원)
+# TAB 4: 공역 기하학 및 시야각 실증 (절대 깨지지 않는 컴포넌트 빌드)
 # ==========================================
 with tab4:
     if "t4_alt" not in st.session_state: st.session_state.t4_alt = 400
@@ -228,79 +239,35 @@ with tab4:
 
     geo_col1, geo_col2 = st.columns([5, 5])
     with geo_col1:
-        st.markdown("#### 🗺️ 물리적 실측 축척 다이어그램 (True-to-Scale)")
-        
-        # 가변 유실 원천 차단: 비율에 맞춘 미터당 픽셀 매핑 계산
-        svg_h = 320
-        scale = 230 / 600.0  # 600m 한계를 230px 안에 매핑
-        
-        px_bldg_h = 250 * scale
-        px_uam_alt = alt_val * scale
-        px_uam_len = max(30, len_val * scale)
-        
-        # 복잡한 가변 태그를 완전 제거하고 브라우저 고정 좌표계로 미러링
-        st.markdown(f"""
-        <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%;'>
-            <div style='position: absolute; left: 40px; bottom: 50px; width: 45px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
-                <b style='font-size: 11px; color: #495057; text-align: center; line-height: 1.2;'>63빌딩<br>(250m)</b>
-            </div>
-            
-            <div style='position: absolute; left: 210px; bottom: {50 + px_uam_alt}px; width: {px_uam_len}px; height: {max(14, px_uam_len*0.28)}px; background-color: #6C757D; border: 2px solid #343A40; border-radius: 50%; display: flex; justify-content: center; align-items: center; transform: translate(-50%, 50%);'>
-                <b style='font-size: 10px; color: white; white-space: nowrap;'>모선({len_val}m)</b>
-            </div>
-            
-            <div style='position: absolute; left: 370px; bottom: 50px; width: 40px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end;'>
-                <svg width="20" height="34" viewBox="0 0 16 32">
-                    <circle cx="8" cy="4" r="3.5" fill="#212529" />
-                    <line x1="8" y1="7" x2="8" y2="19" stroke="#212529" stroke-width="2.5" />
-                    <line x1="8" y1="11" x2="2" y2="15" stroke="#212529" stroke-width="2.2" />
-                    <line x1="8" y1="11" x2="14" y2="15" stroke="#212529" stroke-width="2.2" />
-                    <line x1="8" y1="19" x2="4" y2="30" stroke="#212529" stroke-width="2.2" />
-                    <line x1="8" y1="19" x2="12" y2="30" stroke="#212529" stroke-width="2.2" />
-                </svg>
-                <span style='font-size: 11px; color: #212529; font-weight: bold; margin-top:2px;'>관찰자</span>
-            </div>
-            
-            <svg style='position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;'>
-                <line x1="380" y1="{svg_h - 82}" x2="{210 - px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
-                <line x1="380" y1="{svg_h - 82}" x2="{210 + px_uam_len/2}" y2="{svg_h - 50 - px_uam_alt}" stroke="#DC3545" stroke-dasharray="5,5" stroke-width="2" />
-            </svg>
-            
-            <div style='position: absolute; left: 0; bottom: 50px; width: 100%; height: 4px; background-color: #495057;'></div>
-            <span style='position: absolute; left: 15px; bottom: 18px; font-size: 12px; font-weight: bold; color: #495057;'>지표면 (0m)</span>
-            <span style='position: absolute; right: 20px; top: 15px; font-size: 13px; font-weight: bold; color: #0D6EFD;'>실시간 지상고도: {alt_val}m</span>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("#### 🗺️ 물리적 실측 축척 지표")
+        with st.container(border=True):
+            st.metric("현재 설정 조건 공중 모선 고도", f"{alt_val} m")
+            st.metric("모선 제원 전장 길이", f"{len_val} m")
+            st.markdown("---")
+            st.markdown(f"**상대비교 레퍼런스:** 여의도 63빌딩 높이는 **250m**입니다. 고도 슬라이더를 250m 미만으로 조정 시 모선이 빌딩보다 아래 스카이라인에 위치하게 됨을 수리적으로 증명합니다.")
 
     with geo_col2:
         st.markdown("#### 👁️ 1인칭 체감 뷰 (FPV) 및 수용성 대조")
         fov_card_color = "#198754" if calculated_fov <= 15.6 else "#DC3545"
-        fov_judgement = "시내버스보다 작게 보임 (위압감 차단 성공)" if calculated_fov <= 15.6 else "도시 스카이라인 위압감 발생 (고도 상향 권장)"
+        fov_judgement = "시내버스보다 작게 보임 (위압감 차단 성공)" if calculated_fov <= 15.6 else "도시 스카이라인 위압감 발생"
         
-        # 계측 막대(레퍼런스 바) 비율 연산 처리
-        bus_pct = (15.60 / 60.0) * 100
-        bldg_pct = (14.10 / 60.0) * 100
-        uam_pct = min(100.0, (calculated_fov / 60.0) * 100)
+        bus_pct = 15.60 / 60.0
+        bldg_pct = 14.10 / 60.0
+        uam_pct = min(1.0, calculated_fov / 60.0)
 
-        st.markdown(f"""
-        <div class='main-box' style='background-color: #212529; color: white; height: {svg_h}px; padding: 22px; overflow:hidden;'>
-            <p style='font-size: 18px; font-weight: bold; color: #FFC107; margin-bottom: 2px;'>실제 체감 시야각 (FOV): {calculated_fov:.2f}°</p>
-            <p style='font-size: 13px; color: {fov_card_color}; font-weight: bold; margin-bottom: 15px;'>공학적 결론: {fov_judgement}</p>
+        with st.container(border=True):
+            st.markdown(f"### 실제 체감 시야각 (FOV): <b style='color:#DC3545;'>{calculated_fov:.2f}°</b>", unsafe_allow_html=True)
+            st.markdown(f"**공학적 결론:** {fov_judgement}")
+            st.markdown("---")
             
-            <div style='margin-bottom: 12px;'>
-                <div style='display:flex; justify-content:space-between; font-size:11px; color:#A0AEC0;'><span>40m 앞 일반 시내버스 차로 통과 시</span><b>15.60°</b></div>
-                <div style='background-color:#4A5568; height:8px; border-radius:4px; width:100%; margin-top:3px;'><div style='background-color:#198754; height:8px; border-radius:4px; width:{bus_pct}%;'></div></div>
-            </div>
-            <div style='margin-bottom: 12px;'>
-                <div style='display:flex; justify-content:space-between; font-size:11px; color:#A0AEC0;'><span>1km 거리 밖 여의도 63빌딩 원거리 조망 시</span><b>14.10°</b></div>
-                <div style='background-color:#4A5568; height:8px; border-radius:4px; width:100%; margin-top:3px;'><div style='background-color:#0D6EFD; height:8px; border-radius:4px; width:{bldg_pct}%;'></div></div>
-            </div>
-            <div>
-                <div style='display:flex; justify-content:space-between; font-size:11px; color:#FFC107;'><span>현재 연동 조건부 공중 UAM 모선 조망 시</span><b>{calculated_fov:.2f}°</b></div>
-                <div style='background-color:#4A5568; height:8px; border-radius:4px; width:100%; margin-top:3px;'><div style='background-color:#DC3545; height:8px; border-radius:4px; width:{uam_pct}%;'></div></div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
+            st.caption(f"40m 전방 일반 시내버스 차로 통과 시 (FOV 15.60°)")
+            st.progress(bus_pct)
+            
+            st.caption(f"1km 거리 밖 여의도 63빌딩 원거리 조망 시 (FOV 14.10°)")
+            st.progress(bldg_pct)
+            
+            st.caption(f"현재 연동 조건부 공중 UAM 모선 조망 시 (FOV {calculated_fov:.2f}°)")
+            st.progress(uam_pct)
 
     st.markdown("<div class='footer-control-panel'>", unsafe_allow_html=True)
     st.markdown("<h4 style='color:#6F42C1; margin-top:0; font-weight:bold;'>🛠️ 공역 기하학 및 기체 제원 제어판 (하단 레이아웃)</h4>", unsafe_allow_html=True)
