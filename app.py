@@ -267,13 +267,12 @@ with tab4:
         svg_h = 320
         scale = 230 / 600.0  
         px_bldg_h = 250 * scale
-        
-        # alt_val, len_val을 alt_v, len_v로 변수명 수정
         px_uam_alt = alt_v * scale
         px_uam_len = max(60, len_v * scale * 1.5) 
         
-        st.markdown(f"""
-        <div style='background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%;'>
+        # html 샌드박스 컴포넌트로 감싸 코드가 깨져 쌩으로 노출되는 현상 차단
+        st.components.v1.html(f"""
+        <div style='font-family: sans-serif; background-color: #E8F4F8; border: 1px solid #DEE2E6; border-radius: 12px; height: {svg_h}px; position: relative; overflow:hidden; width:100%; box-sizing: border-box;'>
             <div style='position: absolute; left: 30px; bottom: 50px; width: 65px; height: {px_bldg_h}px; background-color: #CED4DA; border: 2px solid #ADB5BD; border-bottom: none; display: flex; align-items: center; justify-content: center;'>
                 <b style='font-size: 13px; color: #495057; text-align: center; line-height: 1.2;'>63빌딩<br>(250m)</b>
             </div>
@@ -303,7 +302,7 @@ with tab4:
             <span style='position: absolute; left: 15px; bottom: 18px; font-size: 12px; font-weight: bold; color: #495057;'>지표면 (0m)</span>
             <span style='position: absolute; right: 20px; top: 15px; font-size: 13px; font-weight: bold; color: #0D6EFD;'>실시간 비행고도: {alt_v}m</span>
         </div>
-        """, unsafe_allow_html=True)
+        """, height=svg_h)
 
     with geo_col2:
         st.markdown("##### 👁️ 1인칭 체감 뷰 (FPV) 및 수용성 대조")
